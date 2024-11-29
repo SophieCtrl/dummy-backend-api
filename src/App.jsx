@@ -8,30 +8,19 @@ import AvailablePlaces from "./components/AvailablePlaces.jsx";
 import { updateUserPlaces } from "./http.js";
 import { fetchUserPlaces } from "./http.js";
 import ErrorPage from "./components/ErrorPage.jsx";
+import { useFetch } from "./hooks/useFetch.js";
 
 function App() {
   const selectedPlace = useRef();
-  const [userPlaces, setUserPlaces] = useState([]);
   const [errorUpdatingPlaces, setErrorUpdatingPlaces] = useState();
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState();
 
-  useEffect(() => {
-    async function fetchUserData() {
-      setIsFetching(true);
-      try {
-        const userData = await fetchUserPlaces();
-        setUserPlaces(userData);
-      } catch (error) {
-        setErrorUpdatingPlaces({
-          message: error.message || "Failed to fetch user places.",
-        });
-      }
-      setIsFetching(false);
-    }
-    fetchUserData();
-  }, []);
+  const {
+    isFetching,
+    error,
+    fetchedData: userPlaces,
+    setFetchedData: setUserPlaces,
+  } = useFetch(fetchUserPlaces, []);
 
   function handleStartRemovePlace(place) {
     setModalIsOpen(true);
@@ -55,10 +44,10 @@ function App() {
 
     try {
       await updateUserPlaces([selectedPlace, ...userPlaces]);
-    } catch (error) {
+    } catch (errorUpdatingPlaces) {
       setUserPlaces(userPlaces);
       setErrorUpdatingPlaces({
-        message: error.message || "Failed to update places.",
+        message: errorUpdatingPlaces.message || "Failed to update places.",
       });
     }
   }
@@ -75,16 +64,16 @@ function App() {
         await updateUserPlaces(
           userPlaces.filter((place) => place.id !== selectedPlace.current.id)
         );
-      } catch (error) {
+      } catch (errorUpdatingPlaces) {
         setUserPlaces(userPlaces);
         setErrorUpdatingPlaces({
-          message: error.message || "Failed deletion.",
+          message: errorUpdatingPlaces.message || "Failed deletion.",
         });
       }
 
       setModalIsOpen(false);
     },
-    [userPlaces]
+    [userPlaces, setUserPlaces]
   );
 
   function handleError() {
